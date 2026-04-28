@@ -1,0 +1,86 @@
+# Stable Diffusion WebUI Forge — single-card deployment.
+#
+# Layout:
+#   forge       : WebUI + API in one process, GPU index 2, port 7860
+#   sd-adapter  : OpenAI /v1/images/generations  ->  Forge /sdapi/v1/txt2img, port 8080
+#
+# Bind mounts:
+#   /data/x/models  -> /app/models      (shared model storage; create on host first)
+#   ./outputs       -> /app/outputs     (generated images)
+#   ./extensions    -> /app/extensions  (user-installed extensions)
+#   ./embeddings    -> /app/embeddings  (textual inversion embeddings)
+#   ./forge-state   -> contains config.json / ui-config.json / styles.csv
+#
+# Prereqs on host:
+#   - NVIDIA driver + nvidia-container-toolkit installed
+#   - mkdir -p /data/x/models/Stable-diffusion /data/x/models/VAE /data/x/models/Lora ...
+#   - cp .env.example .env  (then edit credentials)
+
+services:
+  forge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: forge:local
+    container_name: forge
+    restart: unless-stopped
+    ports:
+      - "${FORGE_PORT:-7860}:7860"
+    environment:
+      HF_HOME: /app/cache/huggingface
+      COMMANDLINE_ARGS: ""
+    volumes:
+      - /data/x/models:/app/models
+      - ./outputs:/app/outputs
+      - ./extensions:/app/extensions
+      - ./embeddings:/app/embeddings
+      - ./forge-state/config.json:/app/config.json
+      - ./forge-state/ui-config.json:/app/ui-config.json
+      - ./forge-state/styles.csv:/app/styles.csv
+      - ./cache:/app/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${GPU_DEVICE_ID:-2}"]
+              capabilities: [gpu]
+    command:
+      - python
+      - launch.py
+      - --listen
+      - --port=7860
+      - --api
+      - --api-auth=${API_USER}:${API_PASS}
+      - --skip-torch-cuda-test
+      - --skip-prepare-environment
+      - --xformers
+      - --cuda-malloc
+      - --pin-shared-memory
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:7860/internal/ping', timeout=5).status==200 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  sd-adapter:
+    build:
+      context: ./docker/sd-adapter
+    image: sd-adapter:local
+    container_name: sd-adapter
+    restart: unless-stopped
+    ports:
+      - "${ADAPTER_PORT:-8080}:8080"
+    environment:
+      FORGE_URL: http://forge:7860
+      FORGE_USER: ${API_USER}
+      FORGE_PASS: ${API_PASS}
+      ADAPTER_KEY: ${ADAPTER_KEY:-}
+      DEFAULT_STEPS: ${DEFAULT_STEPS:-30}
+      DEFAULT_SAMPLER: ${DEFAULT_SAMPLER:-DPM++ 2M Karras}
+      DEFAULT_CFG: ${DEFAULT_CFG:-7}
+      DEFAULT_NEGATIVE_PROMPT: ${DEFAULT_NEGATIVE_PROMPT:-}
+    depends_on:
+      forge:
+        condition: service_started
