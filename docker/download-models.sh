@@ -9,6 +9,10 @@
 #   HF_TOKEN        HuggingFace token, sent as Authorization: Bearer
 #   CIVITAI_TOKEN   CivitAI token, appended as ?token=... query param
 #
+# Mirrors (for slow/blocked regions):
+#   HF_ENDPOINT     Replaces https://huggingface.co in URLs.
+#                   Common pick from mainland China: https://hf-mirror.com
+#
 # Usage:
 #   ./docker/download-models.sh
 #   MODELS_DIR=/srv/models ./docker/download-models.sh --list custom.txt
@@ -45,6 +49,7 @@ command -v wget >/dev/null 2>&1 || { echo "ERROR: wget is required" >&2; exit 1;
 
 echo "Models root : $MODELS_DIR"
 echo "Model list  : $LIST_FILE"
+[ -n "${HF_ENDPOINT:-}" ]   && echo "HF_ENDPOINT : ${HF_ENDPOINT}"
 [ -n "${HF_TOKEN:-}" ]      && echo "HF_TOKEN    : (set, ${#HF_TOKEN} chars)"
 [ -n "${CIVITAI_TOKEN:-}" ] && echo "CIVITAI_TOKEN: (set, ${#CIVITAI_TOKEN} chars)"
 echo
@@ -91,6 +96,10 @@ while IFS='|' read -r raw_subdir raw_filename raw_url raw_sha256 || [ -n "${raw_
 
   case "$url" in
     *huggingface.co*)
+      if [ -n "${HF_ENDPOINT:-}" ]; then
+        mirror="${HF_ENDPOINT%/}"
+        fetch_url="${url/https:\/\/huggingface.co/$mirror}"
+      fi
       if [ -n "${HF_TOKEN:-}" ]; then
         headers+=(--header="Authorization: Bearer $HF_TOKEN")
       fi
