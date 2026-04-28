@@ -1,0 +1,38 @@
+# Model download list for docker/download-models.sh
+#
+# Format:  <subdir>|<filename>|<url>[|<sha256>]
+# Comments start with #. Blank lines are ignored. Whitespace around fields trimmed.
+#
+# Subdir is relative to MODELS_DIR (default /data/x/models).
+# Common subdirs: Stable-diffusion, VAE, Lora, ESRGAN, ControlNet, embeddings, text_encoder
+#
+# Auth tokens (export before running the script):
+#   HF_TOKEN=hf_xxxxx       Required for gated HuggingFace models (e.g. SDXL Base 1.0)
+#                            Get one at https://huggingface.co/settings/tokens
+#   CIVITAI_TOKEN=xxxxx     Required for most CivitAI models
+#                            Get one at https://civitai.com/user/account
+#
+# Uncomment the lines below for the models you actually want, then run:
+#   ./docker/download-models.sh
+
+# ----- SDXL Base 1.0 (gated — needs HF_TOKEN + license accept on the model page) -----
+# Stable-diffusion|sd_xl_base_1.0.safetensors|https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors
+
+# ----- SDXL Refiner (optional, used only by refiner-aware UIs) -----
+# Stable-diffusion|sd_xl_refiner_1.0.safetensors|https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors
+
+# ----- SDXL VAE (fp16-fix; better dynamic range than the baked-in VAE) -----
+# VAE|sdxl_vae.safetensors|https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/resolve/main/sdxl_vae.safetensors
+
+# ----- Flux.1 dev (fp8 quantised by Kijai, ~12 GB; fits in 24 GB VRAM) -----
+# Stable-diffusion|flux1-dev-fp8.safetensors|https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors
+
+# ----- Flux.1 schnell (fp8 quantised; 4-step model, much faster than dev) -----
+# Stable-diffusion|flux1-schnell-fp8.safetensors|https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-schnell-fp8.safetensors
+
+# ----- Real-ESRGAN x4plus upscaler -----
+# ESRGAN|RealESRGAN_x4plus.pth|https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
+
+# ----- Add your own here -----
+# Stable-diffusion|my-favorite-checkpoint.safetensors|https://example.com/path/to/model.safetensors
+# Lora|my-lora.safetensors|https://civitai.com/api/download/models/12345
