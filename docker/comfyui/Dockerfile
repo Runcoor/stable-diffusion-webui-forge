@@ -41,6 +41,19 @@ RUN python -m pip install torch==2.3.1 torchvision==0.18.1 --extra-index-url ${T
  && python -m pip install -r requirements.txt \
  && python -m pip install xformers==0.0.27
 
+# ComfyUI-Manager: clone at build time into a "baked" location outside
+# /comfyui/custom_nodes (which gets bind-mounted at runtime and would hide
+# anything baked into that path). The entrypoint copies it into the
+# bind-mounted dir on first start, which means runtime never needs network
+# access just to bring up the container.
+RUN for attempt in 1 2 3; do \
+      echo ">>> manager clone attempt $attempt"; \
+      rm -rf /opt/comfyui-manager-baked && \
+      git clone --depth 1 "${GITHUB_PROXY}https://github.com/ltdrdata/ComfyUI-Manager.git" \
+        /opt/comfyui-manager-baked && break; \
+      sleep 10; \
+    done && [ -d /opt/comfyui-manager-baked/.git ]
+
 COPY extra_model_paths.yaml /comfyui/extra_model_paths.yaml
 COPY comfyui-entrypoint.sh /usr/local/bin/comfyui-entrypoint.sh
 RUN chmod +x /usr/local/bin/comfyui-entrypoint.sh
