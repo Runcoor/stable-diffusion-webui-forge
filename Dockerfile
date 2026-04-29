@@ -30,8 +30,18 @@ RUN python -m pip install torch==2.3.1 torchvision==0.18.1 --extra-index-url ${T
 
 COPY . /app
 
-RUN python -c "import sys; sys.argv = ['launch.py', '--skip-torch-cuda-test', '--skip-google-blockly']; \
-from modules import launch_utils; launch_utils.prepare_environment()" || true
+# Clone the external repos that Forge expects under repositories/. Pinned to
+# the same commits prepare_environment() resolves at runtime, so we get the
+# vetted versions without having to invoke the launch-time bootstrap (which
+# also does network-heavy pip installs and tries to validate CUDA).
+RUN set -e \
+ && mkdir -p /app/repositories \
+ && git -C /app/repositories clone https://github.com/AUTOMATIC1111/stable-diffusion-webui-assets.git stable-diffusion-webui-assets \
+ && git -C /app/repositories/stable-diffusion-webui-assets checkout 6f7db241d2f8ba7457bac5ca9753331f0c266917 \
+ && git -C /app/repositories clone https://github.com/lllyasviel/huggingface_guess.git huggingface_guess \
+ && git -C /app/repositories/huggingface_guess checkout 84826248b49bb7ca754c73293299c4d4e23a548d \
+ && git -C /app/repositories clone https://github.com/salesforce/BLIP.git BLIP \
+ && git -C /app/repositories/BLIP checkout 48211a1594f1321b00f14c9f7a5b4813144b2fb9
 
 COPY docker/forge-entrypoint.sh /usr/local/bin/forge-entrypoint.sh
 RUN chmod +x /usr/local/bin/forge-entrypoint.sh
