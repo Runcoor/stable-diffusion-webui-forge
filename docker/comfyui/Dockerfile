@@ -44,7 +44,13 @@ WORKDIR /comfyui
 # ComfyUI master pulled in comfy_kitchen which uses torch.library.custom_op,
 # only available in torch >= 2.4. Pin to a current stable that matches the
 # cu121 base image; xformers 0.0.28.post3 is the matching wheel.
-RUN python -m pip install torch==2.5.1 torchvision==0.20.1 --extra-index-url ${TORCH_INDEX_URL} \
+#
+# torchaudio MUST be pinned alongside torch — ComfyUI's requirements.txt
+# pulls in the newest torchaudio otherwise, and that wheel is built against
+# CUDA 13 (libcudart.so.13), which the cu121 base doesn't ship.
+RUN python -m pip install \
+        torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
+        --extra-index-url ${TORCH_INDEX_URL} \
  && python -m pip install -r requirements.txt \
  && python -m pip install xformers==0.0.28.post3
 
