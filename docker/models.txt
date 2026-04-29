@@ -28,7 +28,7 @@
 # Stable-diffusion|flux1-dev-fp8.safetensors|https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors
 
 # ----- Flux.1 schnell (fp8 quantised; 4-step model, much faster than dev) -----
-# Stable-diffusion|flux1-schnell-fp8.safetensors|https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-schnell-fp8.safetensors
+# Stable-diffusion|flux1-schnell-fp8-e4m3fn.safetensors|https://huggingface.co/Kijai/flux-fp8/resolve/main/flux1-schnell-fp8-e4m3fn.safetensors
 
 # ----- Real-ESRGAN x4plus upscaler -----
 # ESRGAN|RealESRGAN_x4plus.pth|https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
