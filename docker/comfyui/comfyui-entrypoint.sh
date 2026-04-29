@@ -7,8 +7,16 @@ set -euo pipefail
 # and skip.
 if [ ! -d /comfyui/custom_nodes/ComfyUI-Manager ]; then
   echo ">>> First run: installing ComfyUI-Manager..."
-  git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git \
-    /comfyui/custom_nodes/ComfyUI-Manager
+  proxy="${GITHUB_PROXY:-}"
+  for attempt in 1 2 3; do
+    if git clone --depth 1 "${proxy}https://github.com/ltdrdata/ComfyUI-Manager.git" \
+        /comfyui/custom_nodes/ComfyUI-Manager; then
+      break
+    fi
+    rm -rf /comfyui/custom_nodes/ComfyUI-Manager
+    echo ">>> attempt $attempt failed, retrying..."
+    sleep 5
+  done
 fi
 
 mkdir -p /comfyui/output /comfyui/user /comfyui/input /comfyui/temp

@@ -22,7 +22,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Clone ComfyUI. Tracking master because the project is active and stable;
 # rebuild the image to pick up updates.
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git /comfyui
+#
+# GITHUB_PROXY is an optional build-time prefix (e.g. https://ghproxy.com/)
+# for users behind a slow / blocked GitHub. Combined with --depth 1 and a
+# retry loop, this turns a flaky 150MB clone into a 30MB one with three
+# attempts before giving up.
+ARG GITHUB_PROXY=
+RUN for attempt in 1 2 3; do \
+      echo ">>> clone attempt $attempt"; \
+      rm -rf /comfyui && \
+      git clone --depth 1 "${GITHUB_PROXY}https://github.com/comfyanonymous/ComfyUI.git" /comfyui && break; \
+      sleep 10; \
+    done && [ -d /comfyui/.git ]
 
 WORKDIR /comfyui
 

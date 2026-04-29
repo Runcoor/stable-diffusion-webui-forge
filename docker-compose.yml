@@ -102,11 +102,15 @@ services:
   comfyui:
     build:
       context: ./docker/comfyui
+      args:
+        GITHUB_PROXY: ${GITHUB_PROXY:-}
     image: comfyui:local
     container_name: comfyui
     restart: unless-stopped
     ports:
       - "${COMFYUI_PORT:-8188}:8188"
+    environment:
+      GITHUB_PROXY: ${GITHUB_PROXY:-}
     volumes:
       - /data/x/models:/data/x/models
       - ./comfyui-output:/comfyui/output
