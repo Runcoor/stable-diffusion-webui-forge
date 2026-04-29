@@ -41,9 +41,12 @@ RUN for attempt in 1 2 3; do \
 
 WORKDIR /comfyui
 
-RUN python -m pip install torch==2.3.1 torchvision==0.18.1 --extra-index-url ${TORCH_INDEX_URL} \
+# ComfyUI master pulled in comfy_kitchen which uses torch.library.custom_op,
+# only available in torch >= 2.4. Pin to a current stable that matches the
+# cu121 base image; xformers 0.0.28.post3 is the matching wheel.
+RUN python -m pip install torch==2.5.1 torchvision==0.20.1 --extra-index-url ${TORCH_INDEX_URL} \
  && python -m pip install -r requirements.txt \
- && python -m pip install xformers==0.0.27
+ && python -m pip install xformers==0.0.28.post3
 
 # ComfyUI-Manager: clone at build time into a "baked" location outside
 # /comfyui/custom_nodes (which gets bind-mounted at runtime and would hide
