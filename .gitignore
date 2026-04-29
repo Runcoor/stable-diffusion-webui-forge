@@ -61,4 +61,8 @@ coverage.xml
 .env.*
 !.env.example
 /forge-state/
+/comfyui-output/
+/comfyui-custom-nodes/
+/comfyui-user/
+/comfyui-input/
 

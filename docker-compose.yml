@@ -1,15 +1,28 @@
-# Stable Diffusion WebUI Forge — single-card deployment.
+# Stable Diffusion WebUI Forge — single-card deployment + ComfyUI sidecar.
 #
 # Layout:
-#   forge       : WebUI + API in one process, GPU index 2, port 7860
+#   forge       : WebUI + API in one process, port 7860, GPU $GPU_DEVICE_ID
 #   sd-adapter  : OpenAI /v1/images/generations  ->  Forge /sdapi/v1/txt2img, port 8080
+#   comfyui    : Graph-based workflow engine + ComfyUI-Manager, port 8188,
+#                 GPU $COMFYUI_GPU_DEVICE_ID. Reads the same /data/x/models tree
+#                 as forge via extra_model_paths.yaml — zero model duplication.
 #
 # Bind mounts:
-#   /data/x/models  -> /app/models      (shared model storage; create on host first)
-#   ./outputs       -> /app/outputs     (generated images)
-#   ./extensions    -> /app/extensions  (user-installed extensions)
-#   ./embeddings    -> /app/embeddings  (textual inversion embeddings)
-#   ./forge-state   -> /app/forge-state  (config.json, ui-config.json, styles.csv)
+#   /data/x/models       -> /app/models        and -> /data/x/models in comfyui
+#   ./outputs            -> /app/outputs
+#   ./extensions         -> /app/extensions
+#   ./embeddings         -> /app/embeddings
+#   ./forge-state        -> /app/forge-state
+#   ./comfyui-output     -> /comfyui/output
+#   ./comfyui-custom-nodes -> /comfyui/custom_nodes
+#   ./comfyui-user       -> /comfyui/user
+#   ./comfyui-input      -> /comfyui/input
+#
+# GPU sharing:
+#   Default puts both forge and comfyui on the same GPU. Each tool loads its
+#   own copy of the active model when it generates, so don't run heavy jobs
+#   on both at the same time. Once you outgrow that, set
+#   COMFYUI_GPU_DEVICE_ID to a different physical card in .env.
 #
 # Prereqs on host:
 #   - NVIDIA driver + nvidia-container-toolkit installed
@@ -85,3 +98,38 @@ services:
     depends_on:
       forge:
         condition: service_started
+
+  comfyui:
+    build:
+      context: ./docker/comfyui
+    image: comfyui:local
+    container_name: comfyui
+    restart: unless-stopped
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    volumes:
+      - /data/x/models:/data/x/models
+      - ./comfyui-output:/comfyui/output
+      - ./comfyui-custom-nodes:/comfyui/custom_nodes
+      - ./comfyui-user:/comfyui/user
+      - ./comfyui-input:/comfyui/input
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${COMFYUI_GPU_DEVICE_ID:-${GPU_DEVICE_ID:-2}}"]
+              capabilities: [gpu]
+    command:
+      - python
+      - main.py
+      - --listen
+      - "0.0.0.0"
+      - --port
+      - "8188"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8188/', timeout=5).status==200 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

@@ -1,0 +1,17 @@
+# Tells ComfyUI to read models from /data/x/models using Forge's directory
+# layout, so a single shared model tree serves both engines without
+# duplication. Bind-mounted into the container at /data/x/models.
+
+forge_shared:
+    base_path: /data/x/models
+    checkpoints: Stable-diffusion
+    configs: Stable-diffusion
+    vae: VAE
+    vae_approx: VAE-approx
+    loras: Lora
+    upscale_models: ESRGAN
+    embeddings: embeddings
+    controlnet: ControlNet
+    clip: text_encoder
+    diffusion_models: unet
+    unet: unet
