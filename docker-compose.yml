@@ -9,7 +9,7 @@
 #   ./outputs       -> /app/outputs     (generated images)
 #   ./extensions    -> /app/extensions  (user-installed extensions)
 #   ./embeddings    -> /app/embeddings  (textual inversion embeddings)
-#   ./forge-state   -> contains config.json / ui-config.json / styles.csv
+#   ./forge-state   -> /app/forge-state  (config.json, ui-config.json, styles.csv)
 #
 # Prereqs on host:
 #   - NVIDIA driver + nvidia-container-toolkit installed
@@ -34,9 +34,7 @@ services:
       - ./outputs:/app/outputs
       - ./extensions:/app/extensions
       - ./embeddings:/app/embeddings
-      - ./forge-state/config.json:/app/config.json
-      - ./forge-state/ui-config.json:/app/ui-config.json
-      - ./forge-state/styles.csv:/app/styles.csv
+      - ./forge-state:/app/forge-state
       - ./cache:/app/cache
     deploy:
       resources:
@@ -52,6 +50,9 @@ services:
       - --port=7860
       - --api
       - --api-auth=${API_USER}:${API_PASS}
+      - --ui-settings-file=/app/forge-state/config.json
+      - --ui-config-file=/app/forge-state/ui-config.json
+      - --styles-file=/app/forge-state/styles.csv
       - --skip-torch-cuda-test
       - --skip-prepare-environment
       - --xformers
