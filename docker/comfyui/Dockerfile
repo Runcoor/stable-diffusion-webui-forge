@@ -23,15 +23,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Clone ComfyUI. Tracking master because the project is active and stable;
 # rebuild the image to pick up updates.
 #
-# GITHUB_PROXY is an optional build-time prefix (e.g. https://ghproxy.com/)
-# for users behind a slow / blocked GitHub. Combined with --depth 1 and a
-# retry loop, this turns a flaky 150MB clone into a 30MB one with three
-# attempts before giving up.
-ARG GITHUB_PROXY=
+# GITHUB_BASE_URL replaces "https://github.com" wholesale. It supports both
+# common Chinese mirror styles:
+#   URL replacement:  GITHUB_BASE_URL=https://kkgithub.com
+#                     → https://kkgithub.com/comfyanonymous/ComfyUI.git
+#   Proxy prefix:     GITHUB_BASE_URL=https://ghfast.top/https://github.com
+#                     → https://ghfast.top/https://github.com/comfyanonymous/ComfyUI.git
+# Combined with --depth 1 and a 3-attempt retry, this turns a 150 MB clone
+# into a 30 MB clone with bounded retries.
+ARG GITHUB_BASE_URL=https://github.com
 RUN for attempt in 1 2 3; do \
-      echo ">>> clone attempt $attempt"; \
+      echo ">>> clone attempt $attempt from ${GITHUB_BASE_URL}"; \
       rm -rf /comfyui && \
-      git clone --depth 1 "${GITHUB_PROXY}https://github.com/comfyanonymous/ComfyUI.git" /comfyui && break; \
+      git clone --depth 1 "${GITHUB_BASE_URL}/comfyanonymous/ComfyUI.git" /comfyui && break; \
       sleep 10; \
     done && [ -d /comfyui/.git ]
 
@@ -47,9 +51,9 @@ RUN python -m pip install torch==2.3.1 torchvision==0.18.1 --extra-index-url ${T
 # bind-mounted dir on first start, which means runtime never needs network
 # access just to bring up the container.
 RUN for attempt in 1 2 3; do \
-      echo ">>> manager clone attempt $attempt"; \
+      echo ">>> manager clone attempt $attempt from ${GITHUB_BASE_URL}"; \
       rm -rf /opt/comfyui-manager-baked && \
-      git clone --depth 1 "${GITHUB_PROXY}https://github.com/ltdrdata/ComfyUI-Manager.git" \
+      git clone --depth 1 "${GITHUB_BASE_URL}/ltdrdata/ComfyUI-Manager.git" \
         /opt/comfyui-manager-baked && break; \
       sleep 10; \
     done && [ -d /opt/comfyui-manager-baked/.git ]
